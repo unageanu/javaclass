@@ -1,4 +1,4 @@
-require "javaclass/util"
+require "javaclass/base"
 
 module JavaClass
 
@@ -7,7 +7,7 @@ module JavaClass
   #===クラス
   #
   class Class
-    include JavaClass::Util
+    include JavaClass::Base
 
     #
     #=== コンストラクタ

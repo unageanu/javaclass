@@ -1,4 +1,4 @@
-require "javaclass/util"
+require "javaclass/base"
 
 module JavaClass
 
@@ -6,7 +6,7 @@ module JavaClass
   #===クラスのアクセスフラグの基底クラス。
   #
   class AccessFlag
-    include JavaClass::Util
+    include JavaClass::Base
 
     def initialize( flag )
       @flag = flag
@@ -16,9 +16,11 @@ module JavaClass
     end
     def on(flag)
       @flag |= flag
+      self
     end
     def off(flag)
       @flag &= ~flag
+      self
     end
     def to_bytes()
       to_byte( @flag, 2 )

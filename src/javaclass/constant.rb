@@ -1,4 +1,4 @@
-require "javaclass/util"
+require "javaclass/base"
 
 module JavaClass
 
@@ -6,7 +6,7 @@ module JavaClass
   #=== Constantの基底クラス
   #
 	class Constant
-    include JavaClass::Util
+    include JavaClass::Base
 
     CONSTANT_Class = 7
     CONSTANT_Fieldref = 9

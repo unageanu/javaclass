@@ -1,4 +1,4 @@
-require "javaclass/util"
+require "javaclass/base"
 
 module JavaClass
 
@@ -6,8 +6,8 @@ module JavaClass
   #=== 属性の基底クラス
   #
   class Attribute
-    include JavaClass::Util
-
+    include JavaClass::Base
+    
     #
     #===コンストラクタ
     #
@@ -154,7 +154,7 @@ module JavaClass
   #=== インナークラス
   #
   class InnerClass
-    include JavaClass::Util
+    include JavaClass::Base
     
     #
     #===コンストラクタ
@@ -448,8 +448,9 @@ module JavaClass
   #=== アノテーション
   #
   class Annotation
-    include JavaClass::Util
-
+    include JavaClass::Base
+    include JavaClass::Converters
+    
     #
     #===コンストラクタ
     #
@@ -488,7 +489,7 @@ module JavaClass
   #=== アノテーションのデータ
   #
   class AnnotationElement
-    include JavaClass::Util
+    include JavaClass::Base
 
     #
     #===コンストラクタ
@@ -521,7 +522,8 @@ module JavaClass
   #=== アノテーションデータの基底クラス
   #
   class AnnotationElementValue
-    include JavaClass::Util
+    include JavaClass::Base
+    include JavaClass::Converters
 
     #
     #===コンストラクタ
@@ -713,7 +715,7 @@ module JavaClass
     #<b>戻り値</b>::引数に設定されたアノテーションの配列
     #
     def [](index)
-      @parameter_annotations[index]
+      @parameter_annotations[index] != nil ? @parameter_annotations[index] : [] 
     end
     #
     #=== 引数のindexに対応するアノテーションの配列を設定する。
@@ -727,10 +729,12 @@ module JavaClass
       bytes = super
       body = to_byte( @parameter_annotations.length, 1)
       @parameter_annotations.each {|annotations|
-        body += to_byte( annotations.length, 2)
-        annotations.each {|a|
-          body += a.to_bytes()
-        }
+        body += to_byte( annotations != nil ? annotations.length : 0, 2)
+        if ( annotations != nil )
+          annotations.each {|a|
+            body += a.to_bytes()
+          }
+        end
       }
       bytes += to_byte( body.length, 4)
       bytes += body
@@ -825,7 +829,7 @@ module JavaClass
   #=== 例外
   #
   class Excpetion
-    include JavaClass::Util
+    include JavaClass::Base
         
     def initialize( java_class, start_pc=nil, end_pc=nil, handler_pc=nil, catch_type_index=nil )
       @java_class=java_class
@@ -890,7 +894,7 @@ module JavaClass
   #=== 行番号
   #
   class LineNumber
-    include JavaClass::Util
+    include JavaClass::Base
     def initialize( java_class, start_pc=nil, line_number=nil )
       @java_class=java_class
       @start_pc=start_pc
@@ -948,7 +952,8 @@ module JavaClass
   #=== ローカル変数
   #
   class LocalVariable
-    include JavaClass::Util
+    include JavaClass::Base
+    include JavaClass::Converters
     def initialize( java_class, start_pc=nil, \
       length=nil, name_index=nil, descriptor_index=nil, index=nil )
       @java_class=java_class
@@ -1021,7 +1026,7 @@ module JavaClass
   #=== ローカル変数の型
   #
   class LocalVariableType
-    include JavaClass::Util
+    include JavaClass::Base
     def initialize( java_class, start_pc=nil, \
       length=nil, name_index=nil, signature_index=nil, index=nil )
       @java_class=java_class

@@ -1,4 +1,4 @@
-require "javaclass/util"
+require "javaclass/base"
 require "stringio"
 
 module JavaClass
@@ -73,23 +73,13 @@ module_function
     # field
     fields_count = read( 2, io )
     fields_count.times {|i|
-      f = Field.new( java_class )
-      f.access_flag = FieldAccessFlag.new(read( 2, io ))
-      f.name_index = read( 2, io )
-      f.descriptor_index = read( 2, io )
-      read_attributes(io, java_class, f )
-      java_class.fields << f
+      java_class.fields << read_field( io, java_class )
     }
 
     # method
     methods_count = read( 2, io )
     methods_count.times {|i|
-      m = Method.new( java_class )
-      m.access_flag = MethodAccessFlag.new(read( 2, io ))
-      m.name_index = read( 2, io )
-      m.descriptor_index = read( 2, io )
-      read_attributes(io, java_class, m )
-      java_class.methods << m
+      java_class.methods << read_method( io, java_class )
     }
 
     # attribute
@@ -97,6 +87,36 @@ module_function
 
     return java_class
 	end
+ 
+  #
+  #=== メソッドを読み込む
+  #
+  #*io::IO
+  #*java_class::Javaクラス
+  #
+  def read_method( io, java_class )
+    m = Method.new( java_class )
+    m.access_flag = MethodAccessFlag.new(read( 2, io ))
+    m.name_index = read( 2, io )
+    m.descriptor_index = read( 2, io )
+    read_attributes( io, java_class, m )
+    return m
+  end
+  
+  #
+  #=== フィールドを読み込む
+  #
+  #*io::IO
+  #*java_class::Javaクラス
+  #
+  def read_field( io, java_class )
+    f = Field.new( java_class )
+    f.access_flag = FieldAccessFlag.new(read( 2, io ))
+    f.name_index = read( 2, io )
+    f.descriptor_index = read( 2, io )
+    read_attributes( io, java_class, f )
+    return f
+  end
 
   #
   #=== IOから指定したバイト数だけデータを読み込んで返す
