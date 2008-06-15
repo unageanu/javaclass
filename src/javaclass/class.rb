@@ -29,27 +29,27 @@ module JavaClass
     end
 
     #
-    #=== このクラスを示すClassConstantを取得する。
-    #<b>戻り値</b>::このクラスを示すClassConstant
+    #=== クラス名を取得する。
+    #<b>戻り値</b>::クラス名
     #
-    def this_class
-      get_constant(@this_class_index)
+    def class_name
+      get_constant(@this_class_index).name
     end
 
     #
-    #=== 親クラスを示すClassConstantを取得する。
-    #<b>戻り値</b>::親クラスを示すClassConstant
+    #=== 親クラス名を取得する。
+    #<b>戻り値</b>::親クラス名
     #
     def super_class
-        get_constant(@super_class_index)
+        get_constant(@super_class_index).name
     end
 
     #
-    #=== 実装しているインターフェイスのClassConstantを配列で取得する。
-    #<b>戻り値</b>::実装しているインターフェイスのClassConstantの配列
+    #=== 実装しているインターフェイス名を配列で取得する。
+    #<b>戻り値</b>::実装しているインターフェイス名の配列
     #
     def interfaces
-      @interface_indexs.map {|i| get_constant(i) }
+      @interface_indexs.map {|i| get_constant(i).name }
     end
 
     #
