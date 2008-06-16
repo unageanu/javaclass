@@ -8,6 +8,8 @@ module JavaClass
   #
   class Class
     include JavaClass::Base
+    include JavaClass::Converters
+    include JavaClass::Item
 
     #
     #=== コンストラクタ
@@ -53,6 +55,31 @@ module JavaClass
     end
 
     #
+    #=== クラス名を取得する。
+    #<b>戻り値</b>::クラス名
+    #
+    def source
+      # TODO
+    end
+
+    #
+    #=== クラス名を取得する。
+    #<b>戻り値</b>::クラス名
+    #
+    def enclosing_method
+      # TODO
+    end
+
+    #
+    #=== クラスで利用しているインナークラスを配列で取得する。
+    #<b>戻り値</b>::インナークラスの配列
+    #
+    def inner_classes
+      attributes.key? 'InnerClasses' ?
+        attributes['InnerClasses'].classes : []
+    end
+
+    #
     #===indexのConstantを取得する。
     #*index::constant_poolでのConstantのインデックス
     #<b>戻り値</b>::Constant
@@ -83,12 +110,11 @@ module JavaClass
     # クラスの文字列表現を得る
     def to_s
       str =  "// version #{version}\n"
-      str << "#{attributes['Signature'].to_s}\n" if attributes.key? 'Signature'
-	    str << "#{attributes['Deprecated'].to_s}\n" if attributes.key? 'Deprecated'
+      str << attributes["Signature"].to_s << "\n" if attributes.key? "Signature"
+      str << "// !deprecated!\n" if deprecated?
       str << "#{attributes['SourceFile'].to_s}\n" if attributes.key? 'SourceFile'
       str << "#{attributes['EnclosingMethod'].to_s}\n" if attributes.key? 'EnclosingMethod'
-      str << "#{attributes['RuntimeVisibleAnnotations'].to_s}\n" if attributes.key? 'RuntimeVisibleAnnotations'
-      str << "#{attributes['RuntimeInvisibleAnnotations'].to_s}\n" if attributes.key? 'RuntimeInvisibleAnnotations'
+      str << annotations.inject( "" ){|s, e| s << e.to_s << "\n" }
       str << "#{access_flag.to_s} #{this_class.name} "
       str << "\nextends #{super_class.name} " if super_class.name != nil
       if interfaces.size > 0

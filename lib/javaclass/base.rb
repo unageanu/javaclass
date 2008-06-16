@@ -67,6 +67,40 @@ module JavaClass
 
   end
   
+  module Item
+    #
+    #===シグネチャを取得する。
+    #
+    #<b>戻り値</b>::シグネチャ。定義されていない場合nil
+    #
+    def signature
+      (attributes.key? "Signature") ? attributes["Signature"].signature : nil
+    end
+
+    #
+    #===Deprecatedかどうか評価する。
+    #
+    #<b>戻り値</b>::Deprecatedであればtrue
+    #
+    def deprecated?
+      attributes.key? 'Deprecated'
+    end
+
+    #
+    #===設定されているアノテーションを配列で取得する。
+    #
+    #<b>戻り値</b>::アノテーションの配列
+    #
+    def annotations
+      ['RuntimeVisibleAnnotations', 'RuntimeInvisibleAnnotations'].inject([]) { |l, k|
+          l.concat( attributes[k].annotations ) if attributes.key? k
+          l
+      }
+    end
+  end
+  
+  
+  
   module Converters
   
   module_function
