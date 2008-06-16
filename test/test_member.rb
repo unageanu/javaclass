@@ -1,19 +1,19 @@
 #!/usr/bin/ruby
 
-$: << "../src"
+$: << "../lib"
 
-require "runit/testcase"
-require "runit/cui/testrunner"
+require "test/unit"
 
 require "javaclass"
-require "test-util"
+require "test_util"
 
 module JavaClass
+  
   
   #
   #===Memberのテスト
   #
-  class MemberTest <  RUNIT::TestCase
+  class MemberTest < Test::Unit::TestCase
     
     include TestUtil
     
@@ -96,23 +96,23 @@ module JavaClass
         ])
       }
       assert_field( f ) {|a|
-        assert_equals a.name, "aaa"
-        assert_equals a.descriptor, "Lcom/foo/Hoge;"
-        assert_equals a.static_value, 10
-        assert_equals a.signature, nil
-        assert_equals a.deprecated?, true
-        assert_equals a.annotations, [Annotation.new( @java_class, 48 ), Annotation.new( @java_class, 49 )]
-        assert_equals a.to_s, <<-STR.chomp!
+        assert_equal a.name, "aaa"
+        assert_equal a.descriptor, "Lcom/foo/Hoge;"
+        assert_equal a.static_value, 10
+        assert_equal a.signature, nil
+        assert_equal a.deprecated?, true
+        assert_equal a.annotations, [Annotation.new( @java_class, 48 ), Annotation.new( @java_class, 49 )]
+        assert_equal a.to_s, <<-STR.chomp!
 // !deprecated!
 @com.foo.Hoge
 @com.foo.Var
 public static com.foo.Hoge aaa = 10
 STR
-        assert_equals a.dump, 
+        assert_equal a.dump, 
           "0009001E 00300004 00010000 00020033\n" +
           "00050000 00000011 00000006 00010031\n" + 
           "0000000A 00000006 00010030 0000"
-        assert_equals a.to_bytes, [
+        assert_equal a.to_bytes, [
          0x00, 0x09, 0x00, 0x1E, 0x00, 0x30, 0x00, 0x04, 
          0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x33, 
          0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 
@@ -132,21 +132,21 @@ STR
         ])
       }
       assert_field( f ) {|a|
-        assert_equals a.name, "bbb"
-        assert_equals a.descriptor, "Lcom/foo/Var;"
-        assert_equals a.static_value, nil
-        assert_equals a.signature, "com/foo/Var"
-        assert_equals a.deprecated?, false
-        assert_equals a.annotations, [Annotation.new( @java_class, 49 )]
-        assert_equals a.to_s, <<-STR.chomp!
+        assert_equal a.name, "bbb"
+        assert_equal a.descriptor, "Lcom/foo/Var;"
+        assert_equal a.static_value, nil
+        assert_equal a.signature, "com/foo/Var"
+        assert_equal a.deprecated?, false
+        assert_equal a.annotations, [Annotation.new( @java_class, 49 )]
+        assert_equal a.to_s, <<-STR.chomp!
 // signature com/foo/Var
 @com.foo.Var
 public final com.foo.Var bbb
 STR
-        assert_equals a.dump, 
+        assert_equal a.dump, 
           "0011001F 00310002 00110000 00060001\n"+ 
           "00310000 00090000 00020029"
-        assert_equals a.to_bytes, [
+        assert_equal a.to_bytes, [
          0x00, 0x11, 0x00, 0x1F, 0x00, 0x31, 0x00, 0x02, 
          0x00, 0x11, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 
          0x00, 0x31, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 
@@ -186,18 +186,18 @@ STR
         "Code"=> CodeAttribute.new( @java_class, 13, 10, 8, [0x05, 0x06], [], {} )
       }
       assert_method( m ) {|a|
-        assert_equals a.name, "aaa"
-        assert_equals a.descriptor, "(B[ILcom/foo/Var;)Lcom/foo/Hoge;"
-        assert_equals a.parameters, ["byte", "int[]", "com.foo.Var"]
-        assert_equals a.return_type, "com.foo.Hoge"
-        assert_equals a.exceptions, ["java.lang.Exception", "java.lang.Throwable"]
-        assert_equals a.signature, nil
-        assert_equals a.deprecated?, true
-        assert_equals a.annotations, [Annotation.new( @java_class, 48 ), Annotation.new( @java_class, 49 )]
-        assert_equals a.parameter_annotations(0), [Annotation.new( @java_class, 49 ), Annotation.new( @java_class, 48 )]
-        assert_equals a.parameter_annotations(1), []
-        assert_equals a.parameter_annotations(2), [Annotation.new( @java_class, 48 )]
-        assert_equals a.to_s, <<-STR.chomp!
+        assert_equal a.name, "aaa"
+        assert_equal a.descriptor, "(B[ILcom/foo/Var;)Lcom/foo/Hoge;"
+        assert_equal a.parameters, ["byte", "int[]", "com.foo.Var"]
+        assert_equal a.return_type, "com.foo.Hoge"
+        assert_equal a.exceptions, ["java.lang.Exception", "java.lang.Throwable"]
+        assert_equal a.signature, nil
+        assert_equal a.deprecated?, true
+        assert_equal a.annotations, [Annotation.new( @java_class, 48 ), Annotation.new( @java_class, 49 )]
+        assert_equal a.parameter_annotations(0), [Annotation.new( @java_class, 49 ), Annotation.new( @java_class, 48 )]
+        assert_equal a.parameter_annotations(1), []
+        assert_equal a.parameter_annotations(2), [Annotation.new( @java_class, 48 )]
+        assert_equal a.to_s, <<-STR.chomp!
 // !deprecated!
 @com.foo.Hoge
 @com.foo.Var
@@ -206,7 +206,7 @@ public static com.foo.Hoge aaa ( @com.foo.Var
 throws java.lang.Exception, java.lang.Throwable {
 }
 STR
-        assert_equals a.dump, 
+        assert_equal a.dump, 
           "0009001E 003C0007 000D0000 000E000A\n" +
           "00080000 00020506 00000000 00050000\n" +
           "00000002 00000006 00020067 00680011\n" +
@@ -214,7 +214,7 @@ STR
           "03000100 30000000 00000000 0A000000\n" +
           "06000100 30000000 12000000 0F030001\n" +
           "00310000 00000001 00300000"
-        assert_equals a.to_bytes, [
+        assert_equal a.to_bytes, [
          0x00, 0x09, 0x00, 0x1E, 0x00, 0x3C, 0x00, 0x07, 
          0x00, 0x0D, 0x00, 0x00, 0x00, 0x0E, 0x00, 0x0A, 
          0x00, 0x08, 0x00, 0x00, 0x00, 0x02, 0x05, 0x06,
@@ -241,24 +241,24 @@ STR
         ])
       }
       assert_method( m ) {|a|
-        assert_equals a.name, "bbb"
-        assert_equals a.descriptor, "()[Lcom/foo/Hoge;"
-        assert_equals a.parameters, []
-        assert_equals a.return_type, "com.foo.Hoge[]"
-        assert_equals a.exceptions, []
-        assert_equals a.signature, "()[Lcom/foo/Hoge;"
-        assert_equals a.deprecated?, false
-        assert_equals a.annotations, [Annotation.new( @java_class, 49 )]
-        assert_equals a.parameter_annotations(0), []
-        assert_equals a.to_s, <<-STR.chomp!
+        assert_equal a.name, "bbb"
+        assert_equal a.descriptor, "()[Lcom/foo/Hoge;"
+        assert_equal a.parameters, []
+        assert_equal a.return_type, "com.foo.Hoge[]"
+        assert_equal a.exceptions, []
+        assert_equal a.signature, "()[Lcom/foo/Hoge;"
+        assert_equal a.deprecated?, false
+        assert_equal a.annotations, [Annotation.new( @java_class, 49 )]
+        assert_equal a.parameter_annotations(0), []
+        assert_equal a.to_s, <<-STR.chomp!
 // signature ()[Lcom/foo/Hoge;
 @com.foo.Var
 private com.foo.Hoge[] bbb (  )
 STR
-        assert_equals a.dump, 
+        assert_equal a.dump, 
           "0002001F 003D0002 000A0000 00060001\n"+ 
           "00310000 00090000 00020047"
-        assert_equals a.to_bytes, [
+        assert_equal a.to_bytes, [
          0x00, 0x02, 0x00, 0x1F, 0x00, 0x3D, 0x00, 0x02, 
          0x00, 0x0A, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01,
          0x00, 0x31, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00,
