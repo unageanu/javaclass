@@ -4,8 +4,7 @@ Gem::Specification.new do |spec|
   spec.summary = "javaclass is a java class file parser for ruby."
   spec.author = "Masaya Yamauchi"
   spec.email = "y-masaya@red.hot.co.jp"
-  spec.homepage = "http://d.hatena.ne.jp/unageanu"
-  spec.autorequire = "javaclass"
+  spec.homepage = "http://github.com/unageanu/javaclass/tree/master"
   spec.files = Dir.glob("{test,lib}/**/*") << "README" << "ChangeLog"
   spec.test_files = Dir.glob("test/**/*") 
   spec.has_rdoc = true

@@ -1,5 +1,5 @@
 
-$: << "../src"
+$: << "../lib"
 
 require "javaclass"
 require "kconv"
