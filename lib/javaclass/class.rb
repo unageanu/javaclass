@@ -2,7 +2,6 @@ require "javaclass/base"
 
 module JavaClass
 
-
   #
   #===クラス
   #
@@ -43,7 +42,7 @@ module JavaClass
     #<b>戻り値</b>::親クラス名
     #
     def super_class
-        get_constant(@super_class_index).name
+      get_constant(@super_class_index).name
     end
 
     #
@@ -55,11 +54,12 @@ module JavaClass
     end
 
     #
-    #=== クラス名を取得する。
-    #<b>戻り値</b>::クラス名
+    #=== ソースファイルを取得する。
+    #<b>戻り値</b>::ソースファイル
     #
-    def source
-      # TODO
+    def source_file
+      attributes.key? 'SourceFile' ?
+        attributes['SourceFile'].source_file : nil 
     end
 
     #
@@ -67,7 +67,8 @@ module JavaClass
     #<b>戻り値</b>::クラス名
     #
     def enclosing_method
-      # TODO
+      attributes.key? 'EnclosingMethod' ?
+        attributes['EnclosingMethod'] : nil 
     end
 
     #
@@ -122,12 +123,10 @@ module JavaClass
         str << "\nimplements #{interface_names.join(', ')} "
       end
       str << "{\n\n"
-      if ( attributes.key?  'InnerClasses' )
-        attributes['InnerClasses'].classes.each {|inner_class|
-          str << "    " << inner_class.to_s << "\n"
-        }
-        str << "\n"
-      end
+      inner_classes.classes.each {|inner_class|
+        str << "    " << inner_class.to_s << "\n"
+      }
+      str << "\n"
       @fields.each {|f|
         str << indent( f.to_s + ";", 4 ) << "\n"
       }
@@ -147,17 +146,39 @@ module JavaClass
       bytes = to_byte( 0xCAFEBABE, 4)
       bytes += to_byte( @minor_version, 2)
       bytes += to_byte( @major_version, 2)
-      bytes += to_byte( @constant_pool.size+1, 2)
+      
+      constant_pool_length = @constant_pool.inject(1){|i, c|  
+        if c.tag == JavaClass::Constant::CONSTANT_Double \
+          || c.tag == JavaClass::Constant::CONSTANT_Long
+          i += 2
+        else 
+          i += 1
+        end
+      }
+      bytes += to_byte( constant_pool_length, 2)
       @constant_pool.each {|c|
-        next if c == nil
-        bytes += c.to_bytes()
+        bytes += c.to_bytes() if c != nil
       }
       bytes += @access_flag.to_bytes()
-      # TODO クラスとか。
-      #bytes += to_byte( @fields.size, 2)
-      #@fields.each {|f| f.to_bytes(bytes)}
-      #to_byte( @methods.size, 2, bytes)
-      #@methods.each {|m| m.to_bytes(bytes)}
+      bytes += to_byte( @this_class_index, 2)
+      bytes += to_byte( @super_class_index, 2)
+      bytes += to_byte( @interface_indexs.length, 2)
+      @interface_indexs.each {|i|
+        bytes += to_byte( i, 2)
+      }
+      bytes += to_byte( @fields.length, 2)
+      @fields.each {|f|
+        bytes += f.to_bytes()
+      }
+      bytes += to_byte( @methods.length, 2)
+      @methods.each {|m|
+        bytes += m.to_bytes()
+      }
+      bytes += to_byte( @attributes.size, 2)
+      @attributes.keys.sort!.each {|k| 
+        bytes += @attributes[k].to_bytes()
+      }
+      return bytes
     end
 
     attr :major_version, true
