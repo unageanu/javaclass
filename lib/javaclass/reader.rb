@@ -14,28 +14,28 @@ module JavaClass
       @array.shift
     end
     def read(length)
-      @array[0..length].pack("C*")
-    end    
+      @array.slice!(0, length).pack("C*")
+    end
   end  
   
 module_function
 
-	#
-	#===IOまたはバイト配列からクラスを読み込む。
-	#
-	#*io::IOまたはバイト配列。(IO.getc,IO.read(length)が実装されていればOK)
-	#<b>戻り値</b>::クラス
-	#
-	def from( src )
+  #
+  #===IOまたはバイト配列からクラスを読み込む。
+  #
+  #*io::IOまたはバイト配列。(IO.getc,IO.read(length)が実装されていればOK)
+  #<b>戻り値</b>::クラス
+  #
+  def from( src )
     
-	  if ( src.kind_of?(Array) ) 
+    if ( src.kind_of?(Array) ) 
       io = ArrayIO.new(src) 
     else
       io = src
-	  end
+    end
     
-	  # magic
-	  raise "illegal class data." if read( 4, io ) != 0xCAFEBABE
+    # magic
+    raise "illegal class data." if read( 4, io ) != 0xCAFEBABE
 
     java_class = JavaClass::Class.new
 
@@ -48,7 +48,6 @@ module_function
     index = 1
     while( index < constant_pool_count)
       java_class.constant_pool[index] = read_constant(io, java_class)
-
       # constantがdouble or longの場合、次のindexは欠番。
       tag = java_class.constant_pool[index].tag
       if tag == JavaClass::Constant::CONSTANT_Double \
@@ -86,7 +85,7 @@ module_function
     read_attributes(io, java_class, java_class )
 
     return java_class
-	end
+  end
  
   #
   #=== メソッドを読み込む
@@ -183,7 +182,7 @@ module_function
       bytes = io.read(length)
       cp = UTF8Constant.new( java_class, tag, bytes )
     else
-      raise "unkown constant_pool_tag. tag =" << tag.to_s
+      raise "unknown constant_pool_tag. tag =" << tag.to_s
     end
     return cp
   end

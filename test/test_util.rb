@@ -10,6 +10,11 @@ require "test/unit"
       assertion.call(obj2)
       assert_equal( obj, obj2 )
     end
+    
+    # リソースファイルのパスを取得する。
+    def resource( path )
+      File.dirname(__FILE__) + path
+    end
   end
   
 end

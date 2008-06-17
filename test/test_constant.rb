@@ -10,24 +10,24 @@ require "javaclass"
 
 module JavaClass
 
-	#
-	#===UTF8Constantのテスト
-	#
-	class UTF8ConstantTest < Test::Unit::TestCase
-	
-	  def setup
-	    @java_class = JavaClass::Class.new
-	  end
-	
-	  def teardown
-	  end
-	  
+  #
+  #===UTF8Constantのテスト
+  #
+  class UTF8ConstantTest < Test::Unit::TestCase
+  
+    def setup
+      @java_class = JavaClass::Class.new
+    end
+  
+    def teardown
+    end
+    
     #
     #=== 基本動作のテスト
     #
-	  def test_basic
-	     
-	    c = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "abc" )
+    def test_basic
+       
+      c = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "abc" )
       assert_equal( c.bytes, "abc" )
       assert_equal( c.to_s,  "\"abc\"" )
       assert_equal( c.to_bytes, [0x01, 0x00, 0x03, 0x61, 0x62, 0x63] )
@@ -59,8 +59,8 @@ module JavaClass
       assert_equal( c2.to_bytes, [0x01, 0x00, 0x09, 0xe3, 0x81, 0x82, 0xe3, 0x81, 0x84, 0xe3, 0x81, 0x86] )
       assert_equal( c2.dump, "010009E3 8182E381 84E38186" )
       
-	  end
-	  
+    end
+    
     #
     #=== equalsのテスト。
     #
@@ -76,7 +76,7 @@ module JavaClass
       assert_not_equal( c, c4 )
     end
     
-	end
+  end
 
   #
   #==IntegerConstantのテスト

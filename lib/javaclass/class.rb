@@ -33,7 +33,7 @@ module JavaClass
     #=== クラス名を取得する。
     #<b>戻り値</b>::クラス名
     #
-    def class_name
+    def name
       get_constant(@this_class_index).name
     end
 
@@ -58,7 +58,7 @@ module JavaClass
     #<b>戻り値</b>::ソースファイル
     #
     def source_file
-      attributes.key? 'SourceFile' ?
+      attributes.key?('SourceFile') ?
         attributes['SourceFile'].source_file : nil 
     end
 
@@ -67,7 +67,7 @@ module JavaClass
     #<b>戻り値</b>::クラス名
     #
     def enclosing_method
-      attributes.key? 'EnclosingMethod' ?
+      attributes.key?('EnclosingMethod') ?
         attributes['EnclosingMethod'] : nil 
     end
 
@@ -76,7 +76,7 @@ module JavaClass
     #<b>戻り値</b>::インナークラスの配列
     #
     def inner_classes
-      attributes.key? 'InnerClasses' ?
+      attributes.key?('InnerClasses') ?
         attributes['InnerClasses'].classes : []
     end
 
@@ -107,7 +107,53 @@ module JavaClass
       return nil if index == 0
       return @constant_pool[index].to_s
     end
-
+    #
+    #===同じConstantがなければ追加する。
+    #*constant::Constant
+    #<b>戻り値</b>::追加したConstantのインデックス。すでに存在する場合、そのインデックス。
+    #
+    def put_constant( constant )
+      index = @constant_pool.index constant
+      if index == -1
+        constant.java_class = self
+        index = @constant_pool.push( constant ).length-1
+        # doubleとlongの場合、次は欠番
+        if tag == JavaClass::Constant::CONSTANT_Double \
+          || tag == JavaClass::Constant::CONSTANT_Long
+          @constant_pool.push( nil )
+        end
+      end
+      return index
+    end
+    
+    #
+    #===条件にマッチするメソッドを取得する。
+    #*name::メソッド名
+    #*return_type::戻り値型(省略した場合、戻り値を問わない)
+    #*parameters::引数型の配列(省略した場合、パラメータタイプを問わない)
+    #<b>戻り値</b>::条件にマッチするメソッド。存在しない場合nil
+    #
+    def find_method( name, return_type=nil, parameters=nil )
+      @methods.find {|m|
+        ( m.name.eql?( name ) ) \
+        && ( return_type != nil ? m.return_type.eql?(return_type) : true ) \
+        && ( parameters  != nil ? m.parameters.eql?(parameters)   : true )
+      }
+    end
+    
+    #
+    #===条件にマッチするフィールドを取得する。
+    #*name::メソッド名
+    #*return_type::戻り値型(省略した場合、戻り値を問わない)
+    #*parameters::引数型の配列(省略した場合、パラメータタイプを問わない)
+    #<b>戻り値</b>::条件にマッチするメソッド。存在しない場合nil
+    #
+    def find_field( name )
+      @fields.find {|f|
+        f.name.eql?( name ) 
+      }
+    end
+  
     # クラスの文字列表現を得る
     def to_s
       str =  "// version #{version}\n"
@@ -116,8 +162,8 @@ module JavaClass
       str << "#{attributes['SourceFile'].to_s}\n" if attributes.key? 'SourceFile'
       str << "#{attributes['EnclosingMethod'].to_s}\n" if attributes.key? 'EnclosingMethod'
       str << annotations.inject( "" ){|s, e| s << e.to_s << "\n" }
-      str << "#{access_flag.to_s} #{this_class.name} "
-      str << "\nextends #{super_class.name} " if super_class.name != nil
+      str << "#{access_flag.to_s} #{name} "
+      str << "\nextends #{super_class} " if super_class.name != nil
       if interfaces.size > 0
         interface_names = interfaces.map {|interface| interface.name }
         str << "\nimplements #{interface_names.join(', ')} "
@@ -138,8 +184,8 @@ module JavaClass
     end
 
     def indent( str, size )
-      indent = " "*size
-      indent += str.gsub( /\n/, "\n" << " "*size  )
+      ind = " "*size
+      ind += str.gsub( /\n/, "\n" << " "*size  )
     end
 
     def to_bytes()
@@ -147,15 +193,7 @@ module JavaClass
       bytes += to_byte( @minor_version, 2)
       bytes += to_byte( @major_version, 2)
       
-      constant_pool_length = @constant_pool.inject(1){|i, c|  
-        if c.tag == JavaClass::Constant::CONSTANT_Double \
-          || c.tag == JavaClass::Constant::CONSTANT_Long
-          i += 2
-        else 
-          i += 1
-        end
-      }
-      bytes += to_byte( constant_pool_length, 2)
+      bytes += to_byte( @constant_pool.length, 2)
       @constant_pool.each {|c|
         bytes += c.to_bytes() if c != nil
       }
@@ -164,7 +202,7 @@ module JavaClass
       bytes += to_byte( @super_class_index, 2)
       bytes += to_byte( @interface_indexs.length, 2)
       @interface_indexs.each {|i|
-        bytes += to_byte( i, 2)
+        bytes += to_byte( i, 2 )
       }
       bytes += to_byte( @fields.length, 2)
       @fields.each {|f|

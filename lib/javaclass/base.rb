@@ -48,13 +48,15 @@ module JavaClass
       values = []
       values << self.class
       instance_variables.each { |name|
-        values << instance_variable_get(name)
+        # java_classを比較すると循環するので外す。
+        values << instance_variable_get(name) unless name.to_s =~ /java\_class$/
       }
       return values
     end
   private
     def _eql?(other, &block)
       return false if other == nil
+      return true if self.equal? other
       return false unless other.kind_of?(JavaClass::Base)
       a = values
       b = other.values
@@ -357,7 +359,7 @@ module JavaClass
       when 0xfe; str = "impdep1"
       when 0xff; str = "impdep2"
       else
-        aise "unkown code. code=" << code.to_s
+        aise "unknown code. code=" << code.to_s
       end
       return str;
     end

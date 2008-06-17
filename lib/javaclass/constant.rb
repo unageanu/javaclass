@@ -5,7 +5,7 @@ module JavaClass
   #
   #=== Constantの基底クラス
   #
-	class Constant
+  class Constant
     include JavaClass::Base
 
     CONSTANT_Class = 7
@@ -37,6 +37,7 @@ module JavaClass
 
     attr :tag, true
     attr :java_class, true
+    
   end
 
   #
@@ -443,4 +444,67 @@ module JavaClass
       return s*m*(2**(e-1075))
     end
   end
+  
+  #
+  #===Constantを新規に作成するためのユーティリティ
+  #
+  module ConstantFactory
+  module_function
+    def utf8(value)
+      UTF8Constant.new( nil, Constant::CONSTANT_Utf8, value )
+    end
+    def int(value)
+      IntegerConstant.new( nil, Constant::CONSTANT_Integer, value )
+    end
+#    def float(value)
+#      FloatConstant.new( nil, Constant::CONSTANT_Float, value )
+#    end
+    def long(value)
+      LongConstant.new( nil, Constant::CONSTANT_Long, value )
+    end
+#    def double(value)
+#      DoubleConstant.new( nil, Constant::CONSTANT_Double, value )
+#    end
+
+    #*name_index::名前を示すconstant_poolのインデックス
+    #*descriptor_index::ディスクリプタを示すconstant_poolのインデックス
+    #
+    def name_and_type(name_index=nil, descriptor_index=nil)
+      NameAndTypeConstant.new( nil, Constant::CONSTANT_NameAndType, name_index, descriptor_index )
+    end
+    
+    #*string_index::値を示すconstant_poolのインデックス
+    #
+    def string(string_index=nil)
+      StringConstant.new( nil, Constant::CONSTANT_String, string_index )
+    end
+    
+    #*class_name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
+    #*name_and_type_index::フィールドorメソッドの名前とディスクリプタを示すconstant_poolのインデックス
+    #
+    def interface_methodref(class_name_index=nil, name_and_type_index=nil)
+      InterfaceMethodRefConstant.new( nil, Constant::CONSTANT_InterfaceMethodref, class_name_index, name_and_type_index )
+    end
+    
+    #*class_name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
+    #*name_and_type_index::フィールドorメソッドの名前とディスクリプタを示すconstant_poolのインデックス
+    #
+    def methodref(class_name_index=nil, name_and_type_index=nil)
+      MethodRefConstant.new( nil, Constant::CONSTANT_Methodref, class_name_index, name_and_type_index )
+    end
+    
+    #*class_name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
+    #*name_and_type_index::フィールドorメソッドの名前とディスクリプタを示すconstant_poolのインデックス
+    #
+    def fieldref(class_name_index=nil, name_and_type_index=nil)
+      FieldRefConstant.new( nil, Constant::CONSTANT_Fieldref, class_name_index, name_and_type_index )
+    end
+    
+    #*name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
+    #
+    def class_constant(name_index=nil)
+      ClassConstant.new( nil, Constant::CONSTANT_Class, name_index )
+    end
+  end
+  
 end
