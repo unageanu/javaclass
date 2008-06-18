@@ -450,58 +450,70 @@ module JavaClass
   #
   module ConstantFactory
   module_function
+    
+    #=== UTF8のConstantを生成する。
+    #*value::文字列値
     def utf8(value)
       UTF8Constant.new( nil, Constant::CONSTANT_Utf8, value )
     end
+    
+    #=== 整数ののConstantを生成する。
+    #*value::値
     def int(value)
       IntegerConstant.new( nil, Constant::CONSTANT_Integer, value )
     end
+  
 #    def float(value)
 #      FloatConstant.new( nil, Constant::CONSTANT_Float, value )
 #    end
+    
+    #=== 整数(Long)のConstantを生成する。
+    #*value::値
     def long(value)
       LongConstant.new( nil, Constant::CONSTANT_Long, value )
     end
+  
 #    def double(value)
 #      DoubleConstant.new( nil, Constant::CONSTANT_Double, value )
 #    end
 
+    #=== 名前と型を示すConstantを生成する。
     #*name_index::名前を示すconstant_poolのインデックス
     #*descriptor_index::ディスクリプタを示すconstant_poolのインデックス
-    #
     def name_and_type(name_index=nil, descriptor_index=nil)
       NameAndTypeConstant.new( nil, Constant::CONSTANT_NameAndType, name_index, descriptor_index )
     end
-    
-    #*string_index::値を示すconstant_poolのインデックス
+   
+    #=== 文字列(String)のConstantを生成する。
+    #*string_index::値を示すUTF8Constantのconstant_poolにおけるインデックス
     #
     def string(string_index=nil)
       StringConstant.new( nil, Constant::CONSTANT_String, string_index )
     end
-    
+
+    #=== インターフェイスのメソッドを示すConstantを生成する。
     #*class_name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
     #*name_and_type_index::フィールドorメソッドの名前とディスクリプタを示すconstant_poolのインデックス
-    #
     def interface_methodref(class_name_index=nil, name_and_type_index=nil)
       InterfaceMethodRefConstant.new( nil, Constant::CONSTANT_InterfaceMethodref, class_name_index, name_and_type_index )
     end
     
+    #=== メソッドを示すConstantを生成する。
     #*class_name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
     #*name_and_type_index::フィールドorメソッドの名前とディスクリプタを示すconstant_poolのインデックス
-    #
     def methodref(class_name_index=nil, name_and_type_index=nil)
       MethodRefConstant.new( nil, Constant::CONSTANT_Methodref, class_name_index, name_and_type_index )
     end
     
+    #=== フィールドを示すConstantを生成する。
     #*class_name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
     #*name_and_type_index::フィールドorメソッドの名前とディスクリプタを示すconstant_poolのインデックス
-    #
     def fieldref(class_name_index=nil, name_and_type_index=nil)
       FieldRefConstant.new( nil, Constant::CONSTANT_Fieldref, class_name_index, name_and_type_index )
     end
     
-    #*name_index::フィールドorメソッドを持つクラス名を示すconstant_poolのインデックス
-    #
+    #=== クラスを示すConstantを生成する。
+    #*name_index::クラス名を示すconstant_poolのインデックス
     def class_constant(name_index=nil)
       ClassConstant.new( nil, Constant::CONSTANT_Class, name_index )
     end

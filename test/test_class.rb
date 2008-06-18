@@ -16,6 +16,7 @@ module JavaClass
   class ClassTest < Test::Unit::TestCase
     
     include TestUtil
+    include ConstantFactory
     
     def setup
     end
@@ -26,7 +27,7 @@ module JavaClass
     #
     #=== 基本のクラスの解析テスト
     #
-    def test_Basic
+    def test_basic_parse
     
       jc = get_class_from_resource( "/java_class/com/example/TestClass1.class")
       assert_class( jc ) {|a|
@@ -55,12 +56,22 @@ module JavaClass
         assert_equal a.find_field( "not found" ), nil
       }
       
+   end
+   
+    #
+    #=== Constantの追加のテスト
+    #
+    def test_put_constant
+    
       jc = get_class_from_resource( "/java_class/com/example/TestClass1.class")
-      jc.put_constant( UTF8Constant.new( nil, Constant::CONSTANT_Utf8, "abc" ) )
+      str_index = jc.put_constant( utf8("abc" ) )
+      puts str_index
+      assert_equal str_index, jc.put_constant( utf8("abc" ) ) # 同じindexが返される。
+      
+      # バイト配列化→復元で同じ値が返されることを確認
       assert_class( jc ) {|a|
-      
+        assert_equal a.get_constant_value( str_index ), "abc"
       }
-      
     end
     
     def get_class_from_resource( path )

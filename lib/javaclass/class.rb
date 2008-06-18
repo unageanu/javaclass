@@ -114,10 +114,11 @@ module JavaClass
     #
     def put_constant( constant )
       index = @constant_pool.index constant
-      if index == -1
+      if index == nil
         constant.java_class = self
         index = @constant_pool.push( constant ).length-1
         # doubleとlongの場合、次は欠番
+        tag = constant.tag
         if tag == JavaClass::Constant::CONSTANT_Double \
           || tag == JavaClass::Constant::CONSTANT_Long
           @constant_pool.push( nil )
@@ -125,6 +126,44 @@ module JavaClass
       end
       return index
     end
+    
+    #
+    #===UTF8Constantがプールになければ追加する。
+    #*value::文字列値
+    #<b>戻り値</b>::追加したConstantのインデックス。すでに存在する場合、そのインデックス。
+    #
+    def put_utf8_constant( value )
+      put_constant( UTF8Constant.new( nil, Constant::CONSTANT_Utf8, value ))
+    end
+    
+    #
+    #===整数型のConstantがプールになければ追加する。
+    #*value::整数値
+    #<b>戻り値</b>::追加したConstantのインデックス。すでに存在する場合、そのインデックス。
+    #
+    def put_integer_constant( value )
+      put_constant( IntegerConstant.new( nil, Constant::CONSTANT_Integer, value ))
+    end
+    
+    #
+    #===整数(Long)型のConstantがプールになければ追加する。
+    #*value::整数値
+    #<b>戻り値</b>::追加したConstantのインデックス。すでに存在する場合、そのインデックス。
+    #
+    def put_long_constant( value )
+      put_constant( LongConstant.new( nil, Constant::CONSTANT_Long, value ))
+    end
+    
+    #
+    #===文字列型のConstantがプールになければ追加する。
+    #*value::文字列値
+    #<b>戻り値</b>::追加したConstantのインデックス。すでに存在する場合、そのインデックス。
+    #
+    def put_string_constant( value )
+      put_constant( StringConstant.new( nil, Constant::CONSTANT_String, 
+        put_utf8_constant( value ) ))
+    end
+    
     
     #
     #===条件にマッチするメソッドを取得する。
@@ -154,6 +193,15 @@ module JavaClass
       }
     end
   
+    def new_field
+      
+    end
+    
+    def new_method( name, descriptor )
+      
+    end
+    
+  
     # クラスの文字列表現を得る
     def to_s
       str =  "// version #{version}\n"
@@ -163,13 +211,13 @@ module JavaClass
       str << "#{attributes['EnclosingMethod'].to_s}\n" if attributes.key? 'EnclosingMethod'
       str << annotations.inject( "" ){|s, e| s << e.to_s << "\n" }
       str << "#{access_flag.to_s} #{name} "
-      str << "\nextends #{super_class} " if super_class.name != nil
+      str << "\nextends #{super_class} " if super_class != nil
       if interfaces.size > 0
-        interface_names = interfaces.map {|interface| interface.name }
+        interface_names = interfaces.map {|interface| interface }
         str << "\nimplements #{interface_names.join(', ')} "
       end
       str << "{\n\n"
-      inner_classes.classes.each {|inner_class|
+      inner_classes.each {|inner_class|
         str << "    " << inner_class.to_s << "\n"
       }
       str << "\n"
