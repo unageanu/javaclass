@@ -1,6 +1,5 @@
 
-$: << "../lib"
-
+require "rubygems"
 require "javaclass"
 require "kconv"
 

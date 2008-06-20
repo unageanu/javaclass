@@ -1,4 +1,5 @@
 
+
 $: << "../lib"
 
 require "javaclass"
@@ -6,7 +7,7 @@ require "kconv"
 require "erb"
 
 
-PATH = 'F:\src\xirs\xirs-docmgr\work\classes\com\justsystems\conceptbase\indexmgr\common'
+PATH = 'aaa'
 
 def create( file )
   erb = ERB.new(IO.read("./assert.erb"), nil, "%" )
