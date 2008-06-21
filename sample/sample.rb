@@ -1,5 +1,5 @@
 
-require "rubygems"
+#require "rubygems"
 require "javaclass"
 require "kconv"
 
