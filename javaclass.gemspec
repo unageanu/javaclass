@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name = "javaclass"
-  spec.version = "0.0.1"
+  spec.version = "0.1.1"
   spec.summary = "javaclass is a java class file parser for ruby."
   spec.author = "Masaya Yamauchi"
   spec.email = "y-masaya@red.hot.co.jp"
@@ -10,4 +10,4 @@ Gem::Specification.new do |spec|
   spec.has_rdoc = true
   spec.rdoc_options << "--main" << "README"
   spec.extra_rdoc_files = ["README"]
-end  
+end
