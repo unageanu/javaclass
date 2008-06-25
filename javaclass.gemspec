@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name = "javaclass"
-  spec.version = "0.1.2"
+  spec.version = "0.2.0"
   spec.summary = "javaclass is a java class file parser for ruby."
   spec.author = "Masaya Yamauchi"
   spec.email = "y-masaya@red.hot.co.jp"
