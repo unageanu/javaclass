@@ -1,7 +1,6 @@
 #!/usr/bin/ruby
 
-$: << "../lib"
-#require 'rubygems'
+require 'rubygems'
 require 'javaclass'
 require 'find'
 
