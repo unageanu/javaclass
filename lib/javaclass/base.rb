@@ -149,7 +149,7 @@ module JavaClass
     #
     #=== コードの文字列表現を得る。
     #*code::コード
-    #<b>戻り値</b>::コードの文字列表現
+    #<b>戻り値</b>:: コードの文字列表現
     #
     def convert_code( code )
       str = nil

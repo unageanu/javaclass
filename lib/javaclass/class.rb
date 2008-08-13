@@ -34,7 +34,8 @@ module JavaClass
     #<b>戻り値</b>::クラス名
     #
     def name
-      get_constant(@this_class_index).name
+      c = get_constant(@this_class_index)
+      c ? c.name : nil 
     end
 
     #
@@ -42,7 +43,8 @@ module JavaClass
     #<b>戻り値</b>::親クラス名
     #
     def super_class
-      get_constant(@super_class_index).name
+      c = get_constant(@super_class_index)
+      c ? c.name : nil 
     end
 
     #
