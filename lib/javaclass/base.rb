@@ -1,11 +1,39 @@
 
 module JavaClass
-
+  
+  module Utils
+    
+    #配列で指定されたパスをすべて探索して配下のjar,classを解析し、通知する
+    #*paths:: 探索するパスの配列。ファイルの場合、jarまたはclassであれば解析。
+    #         ディレクトリであれば再帰的に探索。
+    def self.each_class( paths, &block )
+      paths.each {|path|
+        if File.directory?( path )
+          JavaClass::Utils.each_class( Dir.glob("path/*"), &block )
+        elsif File.file?( path )
+          if path =~ /\.class$/
+            open( path, "r" ) {|f|
+              block.call(JavaClass.from( f ))
+            }
+          elsif path =~ /\.jar$/
+            JavaClass::ZipUtils.each_class( path, &block )
+          end
+        end
+      }
+    end
+  end
+  
   module Base
 
     # 0..255の数字の配列に変換する
-    def to_byte( value, length )
+    def to_byte( value, length, signed=false )
       return [0x00]*length if value == nil
+      
+      if signed && value < 0 
+        border = 0x80 << (8 * (length-1))
+        value = (value + border) | border
+      end
+    
       tmp = []
       length.times {|i|
         tmp.unshift( value & 0xFF )

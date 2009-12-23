@@ -120,13 +120,21 @@ module_function
   #
   #=== IOから指定したバイト数だけデータを読み込んで返す
   #
-  #*size::読み込むだバイト数
+  #*size::読み込むバイト数
   #*io::IO
   #<b>戻り値</b>::データ
   #
-  def read( size, io )
+  def read( size, io, unsigned=true )
     res = 0
-    size.times{|i| res = res << 8 | io.getc }
+    size.times{|i| 
+      res = res << 8 | io.getc
+    }
+    if !unsigned 
+      border = 0x80 << (8 * (size-1))
+      mask =  0x7f
+      (size-1).times { mask = mask << 8 | 0xff  }
+      res = (res & border ) != 0  ? (res & mask ) -  border : res
+    end
     return res
   end
 
@@ -214,6 +222,7 @@ module_function
     name   = java_class.get_constant_value( name_index )
     length = read( 4, io )
     attr = nil
+    
     case name
     when "ConstantValue"
       constant_value_index = read( 2, io )
@@ -270,9 +279,10 @@ module_function
       max_locals = read( 2, io )
       codes = []
       code_length = read( 4, io )
-      code_length.times {
-        codes << read( 1, io )
-      }
+      readed = 0
+      while( code_length > readed )
+        readed += read_code( readed, io, java_class, codes )
+      end
       exception_table = []
       exception_table_length = read( 2, io )
       exception_table_length.times {
@@ -302,6 +312,13 @@ module_function
         local_variable_type_table << read_local_variable_type( io, java_class )
       }
       attr = LocalVariableTypeTableAttribute.new( java_class, name_index, local_variable_type_table )
+    when "StackMapTable"
+      stack_map_frame_entries = []
+      entry_count = read( 2, io )
+      entry_count.times {
+        stack_map_frame_entries << read_stack_map_frame_entry( io, java_class )
+      }
+      attr = StackMapTableAttribute .new( java_class, name_index, stack_map_frame_entries )
     else
       read( length, io ) # 読み飛ばす。
       attr = Attribute.new( java_class, name_index )
@@ -445,5 +462,442 @@ module_function
     index = read( 2, io )
     return LocalVariableType.new( java_class, \
       start_pc, length, name_index, signature_index, index )
+  end
+  
+  #
+  #=== スタックマップフレームを読み込む
+  #
+  #*io::IO
+  #*java_class::Javaクラス
+  #
+  def read_stack_map_frame_entry( io, java_class  )
+    frame_type = read( 1, io )
+    if frame_type < 64
+      return SameFrame.new( frame_type )
+    elsif frame_type >= 64 && frame_type < 128
+      variable_info = read_variable_info( io, java_class )
+      return SameLocals1StackItemFrame.new( frame_type, [variable_info] )
+    elsif frame_type == 247
+      offset_delta = read( 2, io )
+      variable_info = read_variable_info( io, java_class )
+      return SameLocals1StackItemFrameExtended.new( 
+        frame_type, offset_delta, [variable_info] )
+    elsif frame_type >= 248 && frame_type < 251
+      offset_delta = read( 2, io )
+      return ChopFrame.new( frame_type, offset_delta  )
+    elsif frame_type == 251
+      offset_delta = read( 2, io )
+      return SameFrameExtended.new( frame_type, offset_delta  )
+    elsif frame_type >= 252 && frame_type < 255
+      offset_delta = read( 2, io )
+      variable_infos=[]
+      (frame_type - 251).times {|i|
+        variable_infos << read_variable_info( io, java_class )
+      }
+      return AppendFrame.new( frame_type, offset_delta, variable_infos )
+    elsif frame_type == 255
+      offset_delta = read( 2, io )
+      local_size = read( 2, io )
+      local_variable_infos=[]
+      (local_size).times {|i|
+        local_variable_infos << read_variable_info( io, java_class )
+      }
+      stack_size = read( 2, io )
+      stack_variable_infos=[]
+      (stack_size).times {|i|
+        stack_variable_infos << read_variable_info( io, java_class )
+      }
+      return FullFrame.new( frame_type, offset_delta, local_variable_infos, stack_variable_infos )
+    end
+  end
+  
+  #
+  #=== 変数情報を読み込む
+  #
+  #*io::IO
+  #*java_class::Javaクラス
+  #
+  def read_variable_info( io, java_class  )
+    tag = read( 1, io )
+    case tag
+      when 7
+        return ObjectVariableInfo.new( tag, read( 2, io ) )
+      when 8
+        return UninitializedVariableInfo.new( tag, read( 2, io ) )
+      else
+        return VariableInfo.new( tag )
+    end
+  end
+  
+  #
+  #=== コードを読み込む
+  #
+  #*index::code中での出現位置
+  #*io::IO
+  #*java_class::Javaクラス
+  #*codes::コードを追加するバッファ
+  #
+  def read_code( index, io, java_class, codes )
+    code = nil
+    opcode = read( 1, io )
+    case opcode
+    when 0x19 # aload
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xBD # anewarray
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x3A # astore
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x10 # bipush
+      operands = [
+        Operand.new( "s1", read( 1, io, false ), "<n>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC0 # checkcast
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x18 # dload
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x39 # dstore
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x17 # fload
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x38 # fstore
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB4 # getfield
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB2 # getstatic
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA7 # goto
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC8 # goto_w
+      operands = [
+        Operand.new( "s4", read( 4, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA5 # if_acmpeq
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA6 # if_acmpne
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x9F # if_icmpeq
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA2 # if_icmpge
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA3 # if_icmpgt
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA4 # if_icmple
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA1 # if_icmplt
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA0 # if_icmpne
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x99 # ifeq
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x9C # ifge
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x9D # ifgt
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x9E # ifle
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x9B # iflt
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x9A # ifne
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC7 # ifnonnull
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC6 # ifnull
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branch-offset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x84 # iinc
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+        Operand.new( "s1", read( 1, io, false ), "<n>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x15 # iload
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC1 # instanceof
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB9 # invokeinterface
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+        Operand.new( "u1", read( 1, io ), "<n>"),
+        Operand.new( "u1", read( 1, io ), "0"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB7 # invokespecial
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB8 # invokestatic
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB6 # invokevirtual
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x36 # istore
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA8 # jsr
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC9 # jsr_w
+      operands = [
+        Operand.new( "s4", read( 4, io, false ), "branchoffset"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x12 # ldc
+      operands = [
+        Operand.new( "u1", read( 1, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x14 # ldc2_w
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x13 # ldc_w
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x16 # lload
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xAB # lookupswitch
+      operands = []
+      # 0 to 3 bytes of padding zeros
+      ((index+1)%4 == 0 ? 0 :4-((index+1)%4)).times {|i|
+        operands << Operand.new( "u1", read( 1, io ), "0 padding")
+      }
+      operands << Operand.new( "s4", read( 4, io, false ), "default_offset")
+      n = read( 4, io, false )
+      operands << Operand.new( "s4", n, "n")
+      n.times {|i|
+        operands << Operand.new( "s4", read( 4, io, false ), "key_#{i}")
+        operands << Operand.new( "s4", read( 4, io, false ), "offset_#{i}")
+      }
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x37 # lstore
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC5 # multianewarray
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+        Operand.new( "u1", read( 1, io ), "<n>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xBB # new
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xBC # newarray
+      operands = [
+        Operand.new( "u1", read( 1, io ), "array-type"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB5 # putfield
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xB3 # putstatic
+      operands = [
+        Operand.new( "u2", read( 2, io ), "index"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xA9 # ret
+      operands = [
+        Operand.new( "u1", read( 1, io ), "<varnum>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0x11 # sipush
+      operands = [
+        Operand.new( "s2", read( 2, io, false ), "<n>"),
+      ]
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xAA # tableswitch
+      operands = []
+      # 0 to 3 bytes of padding zeros
+      ((index+1)%4 == 0 ? 0 :4-((index+1)%4)).times {|i|
+        operands << Operand.new( "u1", read( 1, io ), "0 padding")
+      }
+      operands << Operand.new( "s4", read( 4, io, false ), "default_offset")
+      low = read( 4, io, false )
+      hight = read( 4, io, false )
+      operands << Operand.new( "s4", low,   "<low>")
+      operands << Operand.new( "s4", hight, "<low> + N - 1")
+      (hight-low+1).times {|i|
+        operands << Operand.new( "s4", read( 4, io, false ), "offset_#{i}")
+      }
+      code = Code.new( java_class, index, opcode, operands )
+    when 0xC4 # wide
+      opcode = read( 1, io )
+      case opcode
+      when 0x19 # aload
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x3A # astore
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x18 # dload
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x39 # dstore
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x17 # fload
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x38 # fstore
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x84 # iinc
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+          Operand.new( "s2", read( 2, io, false ), "<n>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x15 # iload
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x36 # istore
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x16 # lload
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0x37 # lstore
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      when 0xA9 # ret
+        operands = [
+          Operand.new( "u2", read( 2, io ), "<varnum>"),
+        ]
+        code = Code.new( java_class, index, opcode, operands, true )
+      end
+    else
+      code = Code.new( java_class, index, opcode )
+    end
+    codes << code if code
+    return code ? code.to_bytes.length : 1
   end
 end

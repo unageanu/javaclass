@@ -1,0 +1,3 @@
+
+2009-12-23 0.3.0 
+    * support the analysis of stack map table attributes and code attribute.

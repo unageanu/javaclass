@@ -43,7 +43,7 @@ module JavaClass
         assert_equal a.access_flag, ClassAccessFlag.new( 
           ClassAccessFlag::ACC_PUBLIC | ClassAccessFlag::ACC_FINAL | ClassAccessFlag::ACC_SUPER )
         assert_equal a.fields.length, 10
-        assert_equal a.methods.length, 3
+        assert_equal a.methods.length, 4
         
         assert_equal a.find_method( "close" ).name, "close"
         assert_equal a.find_method( "not found" ), nil
@@ -65,7 +65,6 @@ module JavaClass
     
       jc = get_class_from_resource( "/java_class/com/example/TestClass1.class")
       str_index = jc.put_constant( utf8("abc" ) )
-      puts str_index
       assert_equal str_index, jc.put_constant( utf8("abc" ) ) # 同じindexが返される。
       
       # バイト配列化→復元で同じ値が返されることを確認

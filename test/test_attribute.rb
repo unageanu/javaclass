@@ -36,6 +36,7 @@ module JavaClass
       @java_class.constant_pool[14]  = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "LineNumberTable" )
       @java_class.constant_pool[15]  = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "LocalVariableTable" )
       @java_class.constant_pool[16]  = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "LocalVariableTypeTable" )
+      @java_class.constant_pool[17]  = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "StackMapTable" )
 
       @java_class.constant_pool[30]  = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "aaa" )
       @java_class.constant_pool[31]  = UTF8Constant.new( @java_class, Constant::CONSTANT_Utf8, "bbb" )
@@ -274,12 +275,13 @@ module JavaClass
     def test_CodeAttribute
       
       exceptions = [Excpetion.new( @java_class, 1, 10, 16, 103 )]
-      attr = CodeAttribute.new( @java_class, 13, 10, 8, [0x05, 0x06], exceptions, {} )
+      codes = [Code.new(@java_class, 0, 0x05), Code.new(@java_class, 1, 0x06)]
+      attr = CodeAttribute.new( @java_class, 13, 10, 8, codes, exceptions, {} )
       assert_attribute( attr ) {|a|
         assert_equal a.name, "Code"
         assert_equal a.max_stack, 10
         assert_equal a.max_locals, 8
-        assert_equal a.codes, [0x05, 0x06]
+        assert_equal a.codes, codes
         assert_equal a.exception_table, exceptions
         assert_equal a.attributes, {}
         assert_equal a.dump, "000D0000 0016000A 00080000 00020506\n00010001 000A0010 00670000"
@@ -896,6 +898,139 @@ module JavaClass
         assert_equal a.to_bytes, [0x00, 0x66, 0x00, 0x65, 0x00, 0x1F, 0x02, 0x01]
       }
     end
+
+    #
+    #=== StackMapTableAttributeのテスト
+    #
+    def test_StackMapTableAttribute
+      
+       vals = [
+        VariableInfo.new( 3 ),
+        ObjectVariableInfo.new( 7, 10 ),
+        UninitializedVariableInfo .new( 8, 2 )
+      ]
+      entries = [
+        SameFrame.new( 3 ),
+        SameLocals1StackItemFrame.new( 70, [UninitializedVariableInfo .new( 8, 2 )] ),
+        FullFrame.new( 255, 3, vals, vals[0..1] )
+      ]
+      attr = StackMapTableAttribute.new( @java_class, 17, entries )
+      assert_attribute( attr ) {|a|
+        assert_equal a.name, "StackMapTable"
+        assert_equal a.stack_map_frame_entries, entries
+        assert_equal a.dump, "00110000 00190003 03460800 02FF0003\n"+
+                                          "00030307 000A0800 02000203 07000A"
+        assert_equal a.to_bytes, [
+          0x00, 0x11, 0x00, 0x00, 0x00, 0x19, 0x00, 0x03, 0x03, 0x46, 0x08, 0x00, 
+          0x02, 0xFF, 0x00, 0x03, 0x00, 0x03, 0x03, 0x07, 0x00, 0x0A, 0x08, 0x00,
+          0x02, 0x00, 0x02, 0x03, 0x07, 0x00, 0x0A
+        ]
+      }
+
+      attr.stack_map_frame_entries = []
+      assert_attribute( attr ) {|a|
+        assert_equal a.name, "StackMapTable"
+        assert_equal a.stack_map_frame_entries, []
+        assert_equal a.dump, "00110000 00020000"
+        assert_equal a.to_bytes, [0x00, 0x11, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00]
+      }
+    end
+    
+    #
+    #=== StackMapFrameのテスト
+    #
+    def test_StackMapFrame
+      
+      vals = [
+        VariableInfo.new( 3 ),
+        ObjectVariableInfo.new( 7, 10 ),
+        UninitializedVariableInfo .new( 8, 2 )
+      ]
+      
+      value = SameFrame.new( 3 )
+      assert_stack_map_frame( value ) {|a|
+        assert_equal a.frame_type, 3
+        assert_equal a.dump, "03"
+        assert_equal a.to_bytes, [0x03]
+      }
+      value = SameLocals1StackItemFrame.new( 70, vals[0..0] )
+      assert_stack_map_frame( value ) {|a|
+        assert_equal a.frame_type, 70
+        assert_equal a.verification_type_info, vals[0..0]
+        assert_equal a.dump, "4603"
+        assert_equal a.to_bytes, [0x46, 0x03]
+      }
+      value = SameLocals1StackItemFrameExtended.new( 247, 3, vals[1..1] )
+      assert_stack_map_frame( value ) {|a|
+        assert_equal a.frame_type, 247
+        assert_equal a.offset_delta, 3
+        assert_equal a.verification_type_info, vals[1..1]
+        assert_equal a.dump, "F7000307 000A"
+        assert_equal a.to_bytes, [0xF7, 0x00, 0x03, 0x07, 0x00, 0x0A]
+      }
+      value = ChopFrame.new( 248, 5 )
+      assert_stack_map_frame( value ) {|a|
+        assert_equal a.frame_type, 248
+        assert_equal a.offset_delta, 5
+        assert_equal a.dump, "F80005"
+        assert_equal a.to_bytes, [0xF8, 0x00, 0x05]
+      }
+      value = SameFrameExtended.new( 251, 16 )
+      assert_stack_map_frame( value ) {|a|
+        assert_equal a.frame_type, 251
+        assert_equal a.offset_delta, 16
+        assert_equal a.dump, "FB0010"
+        assert_equal a.to_bytes, [0xFB, 0x00, 0x10]
+      }
+      value = AppendFrame.new( 254, 10, vals )
+      assert_stack_map_frame( value ) {|a|
+        assert_equal a.frame_type, 254
+        assert_equal a.offset_delta, 10
+        assert_equal a.verification_type_info, vals
+        assert_equal a.dump, "FE000A03 07000A08 0002"
+        assert_equal a.to_bytes, [0xFE, 0x00, 0x0A, 0x03, 0x07, 0x00, 0x0A, 0x08, 0x00, 0x02]
+      }
+      value = FullFrame.new( 255, 3, vals, vals[0..1] )
+      assert_stack_map_frame( value ) {|a|
+        assert_equal a.frame_type, 255
+        assert_equal a.offset_delta, 3
+        assert_equal a.verification_type_info_local, vals
+        assert_equal a.verification_type_info_stack, vals[0..1]
+        assert_equal a.dump, "FF000300 03030700 0A080002 00020307\n" +
+                                          "000A"
+        assert_equal a.to_bytes, [
+          0xFF, 0x00, 0x03, 0x00, 0x03, 0x03, 0x07, 0x00, 0x0A, 0x08, 0x00, 0x02,
+          0x00, 0x02, 0x03, 0x07, 0x00, 0x0A
+        ]
+      }
+    end
+
+    #
+    #=== VariableInfoのテスト
+    #
+    def test_VariableInfo
+      
+      value = VariableInfo.new( 3 )
+      assert_variable_info( value ) {|a|
+        assert_equal a.tag, 3
+        assert_equal a.dump, "03"
+        assert_equal a.to_bytes, [0x03]
+      }
+      value = ObjectVariableInfo.new( 7, 10 )
+      assert_variable_info( value ) {|a|
+        assert_equal a.tag, 7
+        assert_equal a.cpool_index, 10
+        assert_equal a.dump, "07000A"
+        assert_equal a.to_bytes, [0x07, 0x00, 0x0A]
+      }
+      value = UninitializedVariableInfo .new( 8, 2 )
+      assert_variable_info( value ) {|a|
+        assert_equal a.tag, 8
+        assert_equal a.offset, 2
+        assert_equal a.dump, "080002"
+        assert_equal a.to_bytes, [0x08, 0x00, 0x02]
+      }
+    end
     
     def assert_attribute( a, &block )
       assert_to_byte_and_read a, block, proc {|io|  
@@ -950,6 +1085,19 @@ module JavaClass
         JavaClass.read_local_variable_type( io, @java_class )
       }
     end
+    
+    def assert_stack_map_frame( a, &block )
+      assert_to_byte_and_read a, block, proc {|io|  
+        JavaClass.read_stack_map_frame_entry( io, @java_class )
+      }
+    end
+    
+    def assert_variable_info( a, &block )
+      assert_to_byte_and_read a, block, proc {|io|  
+        JavaClass.read_variable_info( io, @java_class )
+      }
+    end
+    
   end
 
 end

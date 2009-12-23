@@ -183,7 +183,7 @@ STR
           [], 
           []
         ]),
-        "Code"=> CodeAttribute.new( @java_class, 13, 10, 8, [0x05, 0x06], [], {} )
+        "Code"=> CodeAttribute.new( @java_class, 13, 10, 8, [Code.new(@java_class, 0, 0x05), Code.new(@java_class, 1, 0x06)], [], {} )
       }
       assert_method( m ) {|a|
         assert_equal a.name, "aaa"
@@ -204,6 +204,9 @@ STR
 public static com.foo.Hoge aaa ( @com.foo.Var
 @com.foo.Hoge byte arg1, int[] arg2, @com.foo.Hoge com.foo.Var arg3 )
 throws java.lang.Exception, java.lang.Throwable {
+
+    0 : iconst_2
+    1 : iconst_3
 }
 STR
         assert_equal a.dump, 

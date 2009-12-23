@@ -1,4 +1,6 @@
 
+$: << "../lib"
+
 require "rubygems"
 require "javaclass"
 require "kconv"
@@ -17,11 +19,11 @@ require "kconv"
   "./java_class/com/example/Deprecated.class",
   "./java_class/com/example/annotation/Annotated.class",
   "./java_class/com/example/annotation/HasDefaultValue.class",
-  "./java_class/com/example/annotation/AnnotatedMethod.class"
+  "./java_class/com/example/annotation/AnnotatedMethod.class",
+  "./java_class/com/example/code/Statement.class"
 ].each { |c|
   open( c, "r+b" ) {|io|
     jc = JavaClass.from io
-    puts jc.to_s.tosjis
-    puts ""
+    puts jc.to_s
   }
 }

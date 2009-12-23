@@ -167,24 +167,24 @@ module JavaClass
       str << "\n" << attributes["Exceptions"].to_s if attributes.key? "Exceptions"
       if ( attributes.key? "Code")
         str << " {\n"
-#        codes = attributes["Code"]
-#        local_types = codes.attributes["LocalVariableTypeTable"] if codes.attributes.key? "LocalVariableTypeTable"
-#
-#        if codes.attributes.key? "LocalVariableTable"
-#          codes.attributes["LocalVariableTable"].local_variable_table.each {|l|
-#            type = local_types.find_by_index(l.index) if local_types != nil
-#            str << "    // signature " << type.signature << "\n" if type != nil
-#            str << "    " << convert_field_descriptor(l.descriptor)
-#            str << " " << l.name << ";\n"
-#          }
-#        end
-#        str << "\n"
-#        lines = codes.attributes["LineNumberTable"] if codes.attributes.key? "LineNumberTable"
-#        codes.codes.each_index {|i|
-#          str << "    " << convert_code(codes.codes[i])
-#          str << " // line : #{lines.line_number(i)}" if lines != nil && lines.line_number(i) != nil
-#          str << "\n";
-#        }
+        codes = attributes["Code"]
+        local_types = codes.attributes["LocalVariableTypeTable"] if codes.attributes.key? "LocalVariableTypeTable"
+
+        if codes.attributes.key? "LocalVariableTable"
+          codes.attributes["LocalVariableTable"].local_variable_table.each {|l|
+            type = local_types.find_by_index(l.index) if local_types != nil
+            str << "    // signature " << type.signature << "\n" if type != nil
+            str << "    " << convert_field_descriptor(l.descriptor)
+            str << " " << l.name << ";\n"
+          }
+        end
+        str << "\n"
+        lines = codes.attributes["LineNumberTable"] if codes.attributes.key? "LineNumberTable"
+        codes.codes.each_index {|i|
+          str << "    " << codes.codes[i].to_s
+          str << " // #{lines.line_number(i)}" if lines != nil && lines.line_number(i) != nil
+          str << "\n";
+        }
         str << "}"
       end
       str << " #{attributes['AnnotationDefault'].to_s}" if attributes.key? 'AnnotationDefault'

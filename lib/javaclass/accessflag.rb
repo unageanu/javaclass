@@ -3,7 +3,7 @@ require "javaclass/base"
 module JavaClass
 
   #
-  #===クラスのアクセスフラグの基底クラス。
+  #===アクセスフラグの基底クラス。
   #
   class AccessFlag
     include JavaClass::Base

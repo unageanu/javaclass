@@ -348,7 +348,7 @@ module JavaClass
       return -1.0/0   if bytes == 0xff800000
       return  0.0/0.0 if bytes >= 0x7f800001 && bytes <= 0x7fffffff
       return  0.0/0.0 if bytes >= 0xff800001 && bytes <= 0xffffffff
-      s = ((bytes >> 31) == 0) ? 1 : -1
+      s = ((bytes >> 31) == 0) ? 1.0 : -1.0
       e = ((bytes >> 23) & 0xff)
       m = (e == 0) ? ((bytes & 0x7fffff) << 1) : ((bytes & 0x7fffff) | 0x800000)
       return s*m*(2**(e-150))
@@ -441,7 +441,7 @@ module JavaClass
       s = ((bytes >> 63) == 0) ? 1 : -1
       e = ((bytes >> 52) & 0x7ff)
       m = (e == 0) ? ((bytes & 0xfffffffffffff) << 1 ) : ((bytes & 0xfffffffffffff) | 0x10000000000000)
-      return s*m*(2**(e-1075))
+      return (s*m*(2**(e-1075))).to_f
     end
   end
   

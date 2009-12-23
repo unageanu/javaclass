@@ -803,10 +803,14 @@ module JavaClass
 
       body = to_byte( @max_stack, 2)
       body += to_byte( @max_locals, 2)
-      body += to_byte( @codes.length, 4)
+      
+      tmp = []
       @codes.each {|c|
-        body += to_byte( c, 1 )
+        tmp += c.to_bytes
       }
+      body += to_byte( tmp.length, 4)
+      body += tmp
+      
       body += to_byte( @exception_table.length, 2)
       @exception_table.each {|ex|
         body += ex.to_bytes()
@@ -1058,4 +1062,291 @@ module JavaClass
     attr :signature_index, true
     attr :index, true
   end
+  
+  #
+  #=== スタックマップテーブル属性
+  #
+  class StackMapTableAttribute < Attribute
+    #
+    #===コンストラクタ
+    #
+    #*java_class::属性の所有者であるJavaクラス
+    #*name_index::名前を示すconstant_poolのインデックス
+    #*stack_map_frame_entries::スタックマップフレームエントリ
+    #
+    def initialize( java_class, name_index, stack_map_frame_entries=[] )
+      super( java_class, name_index)
+      @stack_map_frame_entries = stack_map_frame_entries
+    end
+    def to_bytes
+      bytes = super
+      body = to_byte( @stack_map_frame_entries.length, 2 )
+      @stack_map_frame_entries.each {|e|
+        body += e.to_bytes()
+      }
+      bytes += to_byte( body.length, 4 )
+      bytes += body
+    end
+    attr :stack_map_frame_entries, true
+  end
+  
+  #
+  #=== スタックマップフレーム
+  #
+  class StackMapFrame
+    include JavaClass::Base
+    #
+    #===コンストラクタ
+    #
+    #*frame_type::種別
+    #
+    def initialize(frame_type)
+      @frame_type = frame_type
+    end
+    def to_bytes
+      to_byte( frame_type, 1 )
+    end
+    #種別
+    attr :frame_type, true
+  end
+  
+  #
+  #=== same_frame
+  #
+  class SameFrame < StackMapFrame
+  end
+
+  #
+  #=== same_locals_1_stack_item_frame
+  #
+  class SameLocals1StackItemFrame < StackMapFrame
+    #
+    #===コンストラクタ
+    #
+    #*frame_type::種別
+    #*verification_type_info:: 型情報
+    #
+    def initialize(frame_type, verification_type_info=[])
+      super(frame_type)
+      @verification_type_info = verification_type_info
+    end
+    def to_bytes
+      bytes = super
+      verification_type_info.each {|v|
+        bytes += v.to_bytes 
+      }
+      bytes
+    end
+    #型情報
+    attr :verification_type_info, true
+  end
+
+  #
+  #=== same_locals_1_stack_item_frame_extended
+  #
+  class SameLocals1StackItemFrameExtended < StackMapFrame
+    #
+    #===コンストラクタ
+    #
+    #*frame_type::種別
+    #*offset_delta:: オフセットデルタ
+    #*verification_type_info:: 型情報
+    #
+    def initialize(frame_type, offset_delta, verification_type_info=[])
+      super(frame_type)
+      @offset_delta = offset_delta
+      @verification_type_info = verification_type_info
+    end
+    def to_bytes
+      bytes = super
+      bytes += to_byte( offset_delta, 2 )
+      verification_type_info.each {|v|
+        bytes += v.to_bytes 
+      }
+      bytes
+    end
+    #オフセットデルタ
+    attr :offset_delta, true
+    #型情報
+    attr :verification_type_info, true
+  end
+  
+  #
+  #=== chop_frame
+  #
+  class ChopFrame < StackMapFrame
+    #
+    #===コンストラクタ
+    #
+    #*frame_type::種別
+    #*offset_delta:: オフセットデルタ
+    #
+    def initialize(frame_type, offset_delta)
+      super(frame_type)
+      @offset_delta = offset_delta
+    end
+    def to_bytes
+      bytes = super
+      bytes += to_byte( offset_delta, 2 )
+      bytes
+    end
+    #オフセットデルタ
+    attr :offset_delta, true
+  end
+  
+  #
+  #=== same_frame_extended
+  #
+  class SameFrameExtended < StackMapFrame
+    
+    #
+    #===コンストラクタ
+    #
+    #*frame_type::種別
+    #*offset_delta:: オフセットデルタ
+    #
+    def initialize(frame_type, offset_delta)
+      super(frame_type)
+      @offset_delta = offset_delta
+    end
+    def to_bytes
+      bytes = super
+      bytes += to_byte( offset_delta, 2 )
+      bytes
+    end
+    #オフセットデルタ
+    attr :offset_delta, true
+  end
+  
+  #
+  #=== append_frame
+  #
+  class AppendFrame < StackMapFrame
+    #
+    #===コンストラクタ
+    #
+    #*frame_type::種別
+    #*offset_delta:: オフセットデルタ
+    #*verification_type_info:: 型情報
+    #
+    def initialize(frame_type, offset_delta, verification_type_info=[])
+      super(frame_type)
+      @offset_delta = offset_delta
+      @verification_type_info = verification_type_info
+    end
+    def to_bytes
+      bytes = super
+      bytes += to_byte( offset_delta, 2 )
+      verification_type_info.each {|v|
+        bytes += v.to_bytes 
+      }
+      bytes
+    end
+    #オフセットデルタ
+    attr :offset_delta, true
+    #型情報
+    attr :verification_type_info, true
+  end
+  
+  #
+  #=== full_frame
+  #
+  class FullFrame < StackMapFrame
+    #
+    #===コンストラクタ
+    #
+    #*frame_type::種別
+    #*offset_delta:: オフセットデルタ
+    #*verification_type_info:: 型情報
+    #
+    def initialize(frame_type, offset_delta, 
+      verification_type_info_local=[], verification_type_info_stack=[])
+      super(frame_type)
+      @offset_delta = offset_delta
+      @verification_type_info_local = verification_type_info_local
+      @verification_type_info_stack = verification_type_info_stack
+    end
+    def to_bytes
+      bytes = super
+      bytes += to_byte( offset_delta, 2 )
+      [verification_type_info_local, verification_type_info_stack].each {|vi|
+        bytes += to_byte( vi.length, 2 )
+        vi.each {|v|
+          bytes += v.to_bytes 
+        }
+      }
+      bytes
+    end
+    #オフセットデルタ
+    attr :offset_delta, true
+    #ローカルの型情報
+    attr :verification_type_info_local, true
+    #スタックの型情報
+    attr :verification_type_info_stack, true
+  end
+  
+  #
+  #=== 変数情報(Object_variable_info,Uninitialized_variable_info以外)
+  #
+  class VariableInfo
+    include JavaClass::Base
+    #
+    #===コンストラクタ
+    #
+    #*tag::タグ
+    #
+    def initialize(tag)
+      @tag = tag
+    end
+    def to_bytes
+      to_byte( tag, 1 )
+    end
+    #タグ
+    attr :tag, true
+  end
+  
+  #
+  #=== 変数情報(Object_variable_info)
+  #
+  class ObjectVariableInfo < VariableInfo
+    include JavaClass::Base
+    #
+    #===コンストラクタ
+    #
+    #*tag::タグ
+    #*cpool_index:: cpool_index
+    #
+    def initialize(tag,cpool_index)
+      super(tag)
+      @cpool_index = cpool_index
+    end
+    def to_bytes
+      super + to_byte( cpool_index, 2 )
+    end
+    #cpool_index
+    attr :cpool_index, true
+  end
+   
+   #
+  #=== 変数情報(Uninitialized_variable_info)
+  #
+  class UninitializedVariableInfo < VariableInfo
+    include JavaClass::Base
+    #
+    #===コンストラクタ
+    #
+    #*tag::タグ
+    #*offset:: オフセット
+    #
+    def initialize(tag,offset)
+      super(tag)
+      @offset = offset
+    end
+    def to_bytes
+      super + to_byte( offset, 2 )
+    end
+    #オフセット
+    attr :offset, true
+  end
+  
 end
