@@ -1,15 +1,16 @@
 
 module JavaClass
   
+  #ユーティリティ
   module Utils
     
-    #配列で指定されたパスをすべて探索して配下のjar,classを解析し、通知する
+    #配列で指定されたパスをすべて探索して配下のjar,classを解析し通知する
     #*paths:: 探索するパスの配列。ファイルの場合、jarまたはclassであれば解析。
     #         ディレクトリであれば再帰的に探索。
-    def self.each_class( paths, &block )
+    def self.each_class( *paths, &block )
       paths.each {|path|
         if File.directory?( path )
-          JavaClass::Utils.each_class( Dir.glob("path/*"), &block )
+          JavaClass::Utils.each_class( *Dir.glob("#{path}/*"), &block )
         elsif File.file?( path )
           if path =~ /\.class$/
             open( path, "r" ) {|f|
@@ -387,9 +388,9 @@ module JavaClass
       when 0xfe; str = "impdep1"
       when 0xff; str = "impdep2"
       else
-        aise "unknown code. code=" << code.to_s
+        raise "unknown code. code=" << code.to_s
       end
-      return str;
+      return str
     end
   
   end

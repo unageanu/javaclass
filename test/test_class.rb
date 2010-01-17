@@ -43,7 +43,7 @@ module JavaClass
         assert_equal a.access_flag, ClassAccessFlag.new( 
           ClassAccessFlag::ACC_PUBLIC | ClassAccessFlag::ACC_FINAL | ClassAccessFlag::ACC_SUPER )
         assert_equal a.fields.length, 10
-        assert_equal a.methods.length, 4
+        assert_equal a.methods.length, 3
         
         assert_equal a.find_method( "close" ).name, "close"
         assert_equal a.find_method( "not found" ), nil
